@@ -1,0 +1,17 @@
+{
+  "name": "spacenovax-server-bot-dashboard-v3",
+  "version": "3.0.0",
+  "description": "SpaceNovaX Telegram mining bot + admin dashboard + mission rewards",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "node-telegram-bot-api": "^0.66.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1"
+  }
+}

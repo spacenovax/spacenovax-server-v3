@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SpaceNovaX Admin Dashboard</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#050816; color:white; }
+    .wrap { max-width:1200px; margin:0 auto; padding:28px; }
+    .hero { background:linear-gradient(135deg,#28116b,#071229); border:1px solid #5833ff; border-radius:24px; padding:24px; margin-bottom:20px; }
+    h1 { margin:0; font-size:32px; }
+    .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0; }
+    .card { background:#10162f; border:1px solid rgba(138,43,255,.4); border-radius:18px; padding:18px; }
+    .num { font-size:28px; font-weight:800; color:#c184ff; }
+    input,button { border-radius:10px; padding:10px 12px; border:0; }
+    input { background:#0b1025; color:white; border:1px solid #333b72; min-width:280px; }
+    button { background:#8a2bff; color:white; cursor:pointer; font-weight:bold; margin-left:6px; }
+    table { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
+    th,td { padding:10px; border-bottom:1px solid #24305f; text-align:left; }
+    th { color:#00d4ff; }
+    .danger { background:#c0392b; }
+    .ok { background:#00a86b; }
+    .small { color:#9aa3d8; font-size:13px; }
+    @media(max-width:800px){ .grid{grid-template-columns:1fr 1fr;} table{font-size:12px;} .wrap{padding:14px;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>🚀 SpaceNovaX Admin Dashboard</h1>
+      <p class="small">SNP 포인트, 채굴, 미션, 추천인, 지갑 등록 현황 관리</p>
+      <div>
+        <input id="key" placeholder="Admin Key 입력" value="spacenovax-admin" />
+        <button onclick="loadAll()">불러오기</button>
+        <button onclick="downloadCsv()">CSV 다운로드</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="small">Users</div><div class="num" id="users">-</div></div>
+      <div class="card"><div class="small">Total SNP</div><div class="num" id="points">-</div></div>
+      <div class="card"><div class="small">Wallets</div><div class="num" id="wallets">-</div></div>
+      <div class="card"><div class="small">Missions</div><div class="num" id="missions">-</div></div>
+    </div>
+
+    <div class="card">
+      <h2>사용자 목록</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Telegram ID</th>
+            <th>Username</th>
+            <th>Points</th>
+            <th>Wallet</th>
+            <th>Invite</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+function adminKey(){ return document.getElementById("key").value; }
+
+async function loadAll(){
+  const key = adminKey();
+  const stats = await fetch(`/api/admin/stats?key=${encodeURIComponent(key)}`).then(r=>r.json());
+  if(stats.error){ alert(stats.error); return; }
+  document.getElementById("users").textContent = stats.users;
+  document.getElementById("points").textContent = stats.total_points;
+  document.getElementById("wallets").textContent = stats.wallets;
+  document.getElementById("missions").textContent = stats.missions;
+
+  const data = await fetch(`/api/admin/users?key=${encodeURIComponent(key)}`).then(r=>r.json());
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  data.users.forEach(u => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.telegram_id || ""}</td>
+      <td>${u.username || ""}</td>
+      <td>${u.points || 0}</td>
+      <td>${u.wallet || ""}</td>
+      <td>${u.invite_code || ""}</td>
+      <td>${u.is_blocked ? "Blocked" : "Active"}</td>
+      <td>
+        <button class="${u.is_blocked ? "ok" : "danger"}" onclick="toggleBlock('${u.telegram_id}', ${u.is_blocked ? 0 : 1})">
+          ${u.is_blocked ? "Unblock" : "Block"}
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function toggleBlock(telegram_id, blocked){
+  const key = adminKey();
+  await fetch(`/api/admin/block?key=${encodeURIComponent(key)}`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({telegram_id, blocked})
+  });
+  loadAll();
+}
+
+function downloadCsv(){
+  const key = adminKey();
+  window.location.href = `/api/admin/export?key=${encodeURIComponent(key)}`;
+}
+
+loadAll();
+</script>
+</body>
+</html>
